@@ -148,6 +148,11 @@ def main():
     p_ask.add_argument("--top-k", type=int, default=5, help="Number of chunks to retrieve (default: 5)")
     p_ask.add_argument("--verbose", "-v", action="store_true", help="Print retrieved chunks before answering")
     p_ask.add_argument("--sources", "-s", action="store_true", help="Print source filenames after answering")
+ 
+    # ── agent ─────────────────────────────────────────────────────────────────
+    p_agent = sub.add_parser("agent", help="Launch a LangGraph Agent loop with optional MCP extensions")
+    p_agent.add_argument("--mcp-cmd", type=str, help="Command to run an MCP server (e.g., 'npx')")
+    p_agent.add_argument("--mcp-args", nargs="*", help="Arguments for the MCP server command (e.g., '-y @modelcontextprotocol/server-everything')")
 
     args = parser.parse_args()
 
@@ -155,6 +160,11 @@ def main():
         cmd_ingest(args)
     elif args.command == "ask":
         cmd_ask(args)
+    elif args.command == "agent":
+        import asyncio
+        from agent import run_agent_loop
+        config = build_config(args)
+        asyncio.run(run_agent_loop(config, args.mcp_cmd, args.mcp_args))
 
 
 if __name__ == "__main__":
