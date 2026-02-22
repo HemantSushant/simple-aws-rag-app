@@ -1,0 +1,7 @@
+anthropic
+boto3
+tiktoken
+PyPDF2
+numpy
+pgvector
+psycopg2-binary
