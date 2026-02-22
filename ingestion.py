@@ -14,30 +14,35 @@ import os
 import time
 import uuid
 import pathlib
+from typing import List
 
 import boto3
-import PyPDF2
+from langchain_community.document_loaders import TextLoader, PyPDFLoader
+from langchain_core.documents import Document
 
 from config import Config
-from chunkers import Chunk, get_chunker
+from chunkers import get_chunker
 
 
 # ── Document loaders ──────────────────────────────────────────────────────────
 
 def load_txt(path: str) -> str:
-    with open(path, "r", encoding="utf-8") as f:
-        return f.read()
+    loader = TextLoader(path, encoding="utf-8")
+    docs = loader.load()
+    return "\n\n".join(doc.page_content for doc in docs)
 
 
 def load_pdf(path: str) -> str:
-    with open(path, "rb") as f:
-        reader = PyPDF2.PdfReader(f)
-        pages = [page.extract_text() or "" for page in reader.pages]
-    return "\n\n".join(pages)
+    loader = PyPDFLoader(path)
+    docs = loader.load()
+    return "\n\n".join(doc.page_content for doc in docs)
 
 
 def load_markdown(path: str) -> str:
-    return load_txt(path)
+    # TextLoader handles markdown text just fine for our chunkers
+    loader = TextLoader(path, encoding="utf-8")
+    docs = loader.load()
+    return "\n\n".join(doc.page_content for doc in docs)
 
 
 def load_document(path: str) -> str:
@@ -57,16 +62,16 @@ def load_document(path: str) -> str:
 # ── S3 upload ─────────────────────────────────────────────────────────────────
 
 def upload_chunks_to_s3(
-    chunks: list[Chunk],
+    chunks: List[Document],
     s3_client,
     bucket: str,
     prefix: str = "chunks/",
-) -> list[str]:
+) -> List[str]:
     """
     Upload each chunk as a separate .txt file to S3.
     Returns the list of S3 object keys that were uploaded.
     """
-    keys: list[str] = []
+    keys: List[str] = []
 
     for chunk in chunks:
         # Unique key: chunks/<source_stem>/<uuid>.txt
@@ -80,7 +85,7 @@ def upload_chunks_to_s3(
         s3_client.put_object(
             Bucket=bucket,
             Key=key,
-            Body=chunk.content.encode("utf-8"),
+            Body=chunk.page_content.encode("utf-8"),
             ContentType="text/plain",
             Metadata={
                 # S3 object metadata values must be strings

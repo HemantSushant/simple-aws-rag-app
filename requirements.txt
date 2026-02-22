@@ -5,3 +5,11 @@ PyPDF2
 numpy
 pgvector
 psycopg2-binary
+langchain
+langchain-aws
+langchain-anthropic
+langchain-community
+langchain-text-splitters
+langchain-experimental
+# Required for MarkdownHeaderTextSplitter internally, occasionally for others
+urllib3
